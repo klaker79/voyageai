@@ -1,93 +1,178 @@
 'use client';
 
-import { Sparkles, TrendingDown, Zap, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Sparkles, Clock, ChevronRight, TrendingDown } from 'lucide-react';
+import { Card, Button, Badge, AIScore, Price } from '@/components/ui';
 
-const deals = [
+// Ofertas detectadas por IA - en producción vendrían de un servicio
+const aiDeals = [
     {
         id: 1,
-        route: 'Madrid → París',
-        details: 'Vuelo directo · 2h 15min · Iberia',
-        currentPrice: '€49',
-        originalPrice: '€129',
-        discount: '-62%',
-        expiresIn: '2h 34min',
-        reason: 'Error de tarifa detectado por IA'
+        type: 'flight',
+        route: 'Madrid → Tokio',
+        details: 'Vuelo directo · Turkish Airlines',
+        originalPrice: 890,
+        currentPrice: 485,
+        expiresIn: '2h 30min',
+        aiScore: 97,
+        aiReason: 'Error de tarifa detectado'
     },
     {
         id: 2,
-        route: 'Barcelona → Milán',
-        details: 'Vuelo directo · 1h 30min · Vueling',
-        currentPrice: '€35',
-        originalPrice: '€89',
-        discount: '-61%',
-        expiresIn: '5h 12min',
-        reason: 'Precio mínimo histórico'
+        type: 'hotel',
+        route: 'Hotel Arts Barcelona',
+        details: '5 noches · Suite Premium',
+        originalPrice: 1200,
+        currentPrice: 780,
+        expiresIn: '5h 15min',
+        aiScore: 94,
+        aiReason: 'Oferta flash por baja ocupación'
     },
     {
         id: 3,
-        route: 'Valencia → Berlín',
-        details: 'Vuelo directo · 2h 45min · Ryanair',
-        currentPrice: '€28',
-        originalPrice: '€75',
-        discount: '-63%',
-        expiresIn: '1h 08min',
-        reason: 'Flash sale detectada'
+        type: 'flight',
+        route: 'Barcelona → Nueva York',
+        details: 'Business Class · Delta',
+        originalPrice: 3200,
+        currentPrice: 1890,
+        expiresIn: '12h',
+        aiScore: 92,
+        aiReason: 'Upgrade gratuito detectado'
     }
 ];
 
 export default function AIDeals() {
+    const router = useRouter();
+
     return (
-        <div className="card" style={{ marginTop: '32px' }}>
-            <div className="card-header">
+        <div>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px'
+            }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <h2 className="card-title" style={{ fontSize: '20px' }}>Ofertas Detectadas por IA</h2>
-                    <span className="ai-badge">En tiempo real</span>
+                    <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                        Ofertas IA 🔥
+                    </h2>
+                    <Badge variant="danger">
+                        {aiDeals.length} activas
+                    </Badge>
                 </div>
-                <button className="btn btn-ghost" style={{ padding: '8px 12px' }}>
-                    Configurar alertas
-                </button>
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => router.push('/deals')}
+                >
+                    Ver todas <ChevronRight size={14} />
+                </Button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {deals.map((deal) => (
-                    <div key={deal.id} className="deal-card">
-                        <div className="deal-icon">
-                            <Zap size={24} color="var(--accent-success)" />
-                        </div>
-
-                        <div className="deal-content">
-                            <div className="deal-route">{deal.route}</div>
-                            <div className="deal-details">{deal.details}</div>
-
-                            <div className="deal-price">
-                                <span className="deal-current">{deal.currentPrice}</span>
-                                <span className="deal-original">{deal.originalPrice}</span>
-                                <span className="deal-discount">{deal.discount}</span>
-                            </div>
-
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '16px',
-                                marginTop: '8px',
-                                fontSize: '12px',
-                                color: 'var(--text-muted)'
-                            }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Clock size={12} />
-                                    Expira en {deal.expiresIn}
-                                </span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Sparkles size={12} />
-                                    {deal.reason}
-                                </span>
-                            </div>
-                        </div>
-
-                        <button className="btn btn-primary" style={{ flexShrink: 0 }}>
-                            Reservar
-                        </button>
+            {/* AI Status Card */}
+            <Card style={{
+                marginBottom: '16px',
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15))',
+                border: '1px solid rgba(139, 92, 246, 0.3)'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '12px',
+                        background: 'var(--gradient-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <Sparkles size={24} color="white" />
                     </div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                            Radar de Ofertas Activo
+                        </div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                            Monitoreando 847 rutas basadas en tus preferencias
+                        </div>
+                    </div>
+                    <div style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        background: 'var(--accent-success)',
+                        boxShadow: '0 0 12px var(--accent-success)',
+                        animation: 'pulse 2s infinite'
+                    }} />
+                </div>
+            </Card>
+
+            {/* Deals List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {aiDeals.map((deal) => (
+                    <Card key={deal.id} noPadding style={{ overflow: 'hidden' }}>
+                        {/* Urgency bar for top deals */}
+                        {deal.aiScore >= 95 && (
+                            <div style={{
+                                background: 'var(--accent-danger)',
+                                color: 'white',
+                                textAlign: 'center',
+                                padding: '4px',
+                                fontSize: '11px',
+                                fontWeight: '600'
+                            }}>
+                                🔥 OFERTA EXCEPCIONAL - {deal.aiReason}
+                            </div>
+                        )}
+
+                        <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                {/* Type indicator */}
+                                <div style={{
+                                    width: '44px',
+                                    height: '44px',
+                                    borderRadius: '10px',
+                                    background: deal.type === 'flight' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(139, 92, 246, 0.15)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '20px'
+                                }}>
+                                    {deal.type === 'flight' ? '✈️' : '🏨'}
+                                </div>
+
+                                {/* Info */}
+                                <div>
+                                    <div style={{ fontWeight: '600', marginBottom: '2px' }}>{deal.route}</div>
+                                    <div style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '6px' }}>
+                                        {deal.details}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <AIScore score={deal.aiScore} size="sm" />
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            color: 'var(--accent-danger)',
+                                            fontSize: '11px'
+                                        }}>
+                                            <Clock size={12} />
+                                            Expira en {deal.expiresIn}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Price & Action */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div style={{ textAlign: 'right' }}>
+                                    <Price current={deal.currentPrice} original={deal.originalPrice} size="sm" />
+                                </div>
+                                <Button variant="primary" size="sm">
+                                    Reservar
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
                 ))}
             </div>
         </div>

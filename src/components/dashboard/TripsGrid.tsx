@@ -1,102 +1,209 @@
 'use client';
 
-import { MapPin, Calendar, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { MapPin, Calendar, ArrowRight, Plus, Sparkles } from 'lucide-react';
+import { Card, Button, Badge } from '@/components/ui';
+import { useTripsStore } from '@/store';
+import type { Trip } from '@/types';
 
-const trips = [
+// Datos iniciales de ejemplo (se pueden agregar más desde la app)
+const initialTrips: Trip[] = [
     {
-        id: 1,
-        destination: 'Barcelona → Tokio',
+        id: 'trip-1',
+        name: 'Aventura en Japón',
+        destination: 'Tokio, Japón',
         image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800',
-        dates: '15 Feb - 28 Feb 2026',
-        status: 'upcoming',
-        statusLabel: 'Próximo',
+        startDate: '2026-02-15',
+        endDate: '2026-02-28',
+        status: 'planning',
         progress: 85,
-        progressLabel: 'Vuelo + Hotel confirmados',
-        price: '€1,450',
-        savings: 'Ahorraste €320 con IA'
+        bookings: [],
+        totalCost: 1450,
+        savings: 320
     },
     {
-        id: 2,
-        destination: 'Madrid → Nueva York',
+        id: 'trip-2',
+        name: 'Nueva York City',
+        destination: 'Nueva York, USA',
         image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800',
-        dates: '10 Mar - 20 Mar 2026',
+        startDate: '2026-03-10',
+        endDate: '2026-03-20',
         status: 'planning',
-        statusLabel: 'Planificando',
         progress: 45,
-        progressLabel: 'Buscando mejores ofertas',
-        price: '€890',
-        savings: 'IA optimizando precio'
+        bookings: [],
+        totalCost: 890,
+        savings: 0
     },
     {
-        id: 3,
-        destination: 'Lisboa → Bali',
+        id: 'trip-3',
+        name: 'Escapada a Bali',
+        destination: 'Bali, Indonesia',
         image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800',
-        dates: '5 Abr - 20 Abr 2026',
+        startDate: '2026-04-05',
+        endDate: '2026-04-20',
         status: 'planning',
-        statusLabel: 'Planificando',
         progress: 20,
-        progressLabel: 'Analizando opciones',
-        price: '€2,100',
-        savings: 'Potencial ahorro: €450'
+        bookings: [],
+        totalCost: 2100,
+        savings: 450
     }
 ];
 
 export default function TripsGrid() {
+    const router = useRouter();
+    const { trips: storeTrips, setActiveTrip } = useTripsStore();
+    
+    // Usar viajes del store o los iniciales si está vacío
+    const trips = storeTrips.length > 0 ? storeTrips : initialTrips;
+
+    const formatDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    };
+
+    const getStatusBadge = (status: Trip['status']) => {
+        switch (status) {
+            case 'active':
+                return <Badge variant="success">En curso</Badge>;
+            case 'completed':
+                return <Badge variant="muted">Completado</Badge>;
+            default:
+                return <Badge variant="ai">Planificando</Badge>;
+        }
+    };
+
+    const handleTripClick = (trip: Trip) => {
+        setActiveTrip(trip);
+        router.push('/itinerary');
+    };
+
     return (
-        <div>
-            <div className="card-header" style={{ marginBottom: '24px' }}>
-                <h2 className="card-title" style={{ fontSize: '20px' }}>Mis Viajes</h2>
-                <button className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '13px' }}>
-                    Ver todos
-                    <ArrowRight size={14} />
-                </button>
+        <div style={{ marginBottom: '32px' }}>
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '20px' 
+            }}>
+                <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>
+                    Mis Viajes
+                </h2>
+                <Button variant="secondary" size="sm" leftIcon={<Plus size={14} />}>
+                    Nuevo viaje
+                </Button>
             </div>
 
-            <div className="trips-grid">
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', 
+                gap: '20px' 
+            }}>
                 {trips.map((trip) => (
-                    <div key={trip.id} className="trip-card">
-                        <div className="trip-image">
-                            <img src={trip.image} alt={trip.destination} />
-                            <span className={`trip-status ${trip.status}`}>
-                                {trip.statusLabel}
-                            </span>
+                    <Card 
+                        key={trip.id} 
+                        noPadding 
+                        onClick={() => handleTripClick(trip)}
+                        style={{ cursor: 'pointer', overflow: 'hidden' }}
+                    >
+                        {/* Image */}
+                        <div style={{
+                            height: '140px',
+                            background: `linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.7)), url(${trip.image})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            padding: '16px',
+                            position: 'relative'
+                        }}>
+                            <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
+                                {getStatusBadge(trip.status)}
+                            </div>
+                            <div style={{ color: 'white' }}>
+                                <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}>
+                                    {trip.name}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.9, fontSize: '13px' }}>
+                                    <MapPin size={14} />
+                                    {trip.destination}
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="trip-content">
-                            <div className="trip-destination">
-                                <MapPin size={18} />
-                                {trip.destination}
+                        {/* Content */}
+                        <div style={{ padding: '16px' }}>
+                            {/* Dates */}
+                            <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px',
+                                color: 'var(--text-secondary)',
+                                fontSize: '13px',
+                                marginBottom: '16px'
+                            }}>
+                                <Calendar size={14} />
+                                {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
                             </div>
 
-                            <div className="trip-dates">
-                                <Calendar size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                                {trip.dates}
-                            </div>
-
-                            <div className="trip-progress">
-                                <div className="progress-bar">
-                                    <div
-                                        className="progress-fill"
-                                        style={{ width: `${trip.progress}%` }}
-                                    />
+                            {/* Progress */}
+                            <div style={{ marginBottom: '16px' }}>
+                                <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between',
+                                    fontSize: '12px',
+                                    marginBottom: '6px'
+                                }}>
+                                    <span style={{ color: 'var(--text-muted)' }}>Progreso</span>
+                                    <span style={{ color: 'var(--accent-primary)', fontWeight: '600' }}>
+                                        {trip.progress}%
+                                    </span>
                                 </div>
-                                <div className="progress-label">
-                                    <span>{trip.progressLabel}</span>
-                                    <span>{trip.progress}%</span>
+                                <div style={{
+                                    height: '6px',
+                                    background: 'var(--glass-border)',
+                                    borderRadius: '3px',
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{
+                                        width: `${trip.progress}%`,
+                                        height: '100%',
+                                        background: 'var(--gradient-primary)',
+                                        borderRadius: '3px',
+                                        transition: 'width 0.3s'
+                                    }} />
                                 </div>
                             </div>
 
-                            <div className="trip-footer">
+                            {/* Footer */}
+                            <div style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center' 
+                            }}>
                                 <div>
-                                    <div className="trip-price">{trip.price}</div>
-                                    <div className="trip-savings">{trip.savings}</div>
+                                    <div style={{ fontSize: '20px', fontWeight: '700' }}>
+                                        €{trip.totalCost.toLocaleString()}
+                                    </div>
+                                    {trip.savings > 0 && (
+                                        <div style={{ 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            gap: '4px',
+                                            color: 'var(--accent-success)', 
+                                            fontSize: '12px' 
+                                        }}>
+                                            <Sparkles size={12} />
+                                            Ahorraste €{trip.savings}
+                                        </div>
+                                    )}
                                 </div>
-                                <button className="btn btn-primary" style={{ padding: '10px 20px' }}>
-                                    Gestionar
-                                </button>
+                                <Button variant="primary" size="sm">
+                                    Gestionar <ArrowRight size={14} />
+                                </Button>
                             </div>
                         </div>
-                    </div>
+                    </Card>
                 ))}
             </div>
         </div>
