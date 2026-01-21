@@ -8,6 +8,7 @@
 import { useState, useCallback } from 'react';
 import { flightService } from '@/services/flights';
 import { kiwiService } from '@/services/kiwi';
+import { apifyService } from '@/services/apify';
 import { stayService } from '@/services/stays';
 import type { FlightSearchParams, FlightWithScore, StaySearchParams, StayWithScore } from '@/types';
 
@@ -25,6 +26,7 @@ interface UseFlightSearchReturn {
     setSortBy: (sort: 'ai' | 'price' | 'duration') => void;
     sortedResults: FlightWithScore[];
     reset: () => void;
+    dataSource: 'apify' | 'kiwi' | 'mock';
 }
 
 export function useFlightSearch(): UseFlightSearchReturn {
@@ -33,14 +35,33 @@ export function useFlightSearch(): UseFlightSearchReturn {
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
     const [sortBy, setSortBy] = useState<'ai' | 'price' | 'duration'>('ai');
+    const [dataSource, setDataSource] = useState<'apify' | 'kiwi' | 'mock'>('mock');
 
     const search = useCallback(async (params: FlightSearchParams) => {
         setIsLoading(true);
         setError(null);
 
         try {
-            // Use Kiwi API (falls back to mock if no API key)
-            const data = await kiwiService.search(params);
+            // Try Apify first (scrapes Google Flights)
+            // Then Kiwi, then fallback to mock
+            const hasApify = process.env.NEXT_PUBLIC_APIFY_TOKEN &&
+                process.env.NEXT_PUBLIC_APIFY_TOKEN !== 'your_apify_token_here';
+            const hasKiwi = process.env.NEXT_PUBLIC_KIWI_API_KEY &&
+                process.env.NEXT_PUBLIC_KIWI_API_KEY !== 'your_kiwi_api_key_here';
+
+            let data: FlightWithScore[];
+
+            if (hasApify) {
+                data = await apifyService.search(params);
+                setDataSource('apify');
+            } else if (hasKiwi) {
+                data = await kiwiService.search(params);
+                setDataSource('kiwi');
+            } else {
+                data = await flightService.search(params);
+                setDataSource('mock');
+            }
+
             setResults(data);
             setHasSearched(true);
         } catch (err) {
@@ -68,7 +89,8 @@ export function useFlightSearch(): UseFlightSearchReturn {
         sortBy,
         setSortBy,
         sortedResults,
-        reset
+        reset,
+        dataSource
     };
 }
 
