@@ -7,6 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { flightService } from '@/services/flights';
+import { kiwiService } from '@/services/kiwi';
 import { stayService } from '@/services/stays';
 import type { FlightSearchParams, FlightWithScore, StaySearchParams, StayWithScore } from '@/types';
 
@@ -38,7 +39,8 @@ export function useFlightSearch(): UseFlightSearchReturn {
         setError(null);
 
         try {
-            const data = await flightService.search(params);
+            // Use Kiwi API (falls back to mock if no API key)
+            const data = await kiwiService.search(params);
             setResults(data);
             setHasSearched(true);
         } catch (err) {
