@@ -56,6 +56,7 @@ export function Button({
 interface CardProps {
     children: ReactNode;
     className?: string;
+    style?: React.CSSProperties;
     highlight?: boolean;
     noPadding?: boolean;
     onClick?: () => void;
@@ -64,6 +65,7 @@ interface CardProps {
 export function Card({
     children,
     className = '',
+    style: customStyle = {},
     highlight = false,
     noPadding = false,
     onClick
@@ -74,7 +76,8 @@ export function Card({
             style={{
                 ...(highlight && { border: '2px solid var(--accent-primary)' }),
                 ...(noPadding && { padding: 0 }),
-                ...(onClick && { cursor: 'pointer' })
+                ...(onClick && { cursor: 'pointer' }),
+                ...customStyle
             }}
             onClick={onClick}
         >

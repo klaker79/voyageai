@@ -1,45 +1,68 @@
 'use client';
 
-import { useState } from 'react';
-import {
-    Plane,
-    ArrowRight,
-    Calendar,
-    Users,
-    Search,
-    Sparkles,
-    Clock,
-    Luggage,
-    Star,
-    TrendingDown,
-    Filter,
-    ArrowUpDown
-} from 'lucide-react';
-import FlightResults from '@/components/flights/FlightResults';
+import { useState, useEffect } from 'react';
+import { Plane, Calendar, Users, Sparkles, MapPin } from 'lucide-react';
+
+// Components
+import { Button, Card, Badge, Spinner, EmptyState } from '@/components/ui';
+import { Input, Checkbox } from '@/components/ui/forms';
+import FlightResultCard from '@/components/flights/FlightResultCard';
+
+// Hooks & Store
+import { useFlightSearch } from '@/hooks';
+import { useSearchStore } from '@/store';
+
+// Types
+import type { FlightSearchParams } from '@/types';
 
 export default function FlightsPage() {
-    const [searchPerformed, setSearchPerformed] = useState(false);
-    const [isSearching, setIsSearching] = useState(false);
+    const {
+        sortedResults,
+        isLoading,
+        hasSearched,
+        search,
+        sortBy,
+        setSortBy,
+        reset
+    } = useFlightSearch();
 
-    const [origin, setOrigin] = useState('Madrid (MAD)');
-    const [destination, setDestination] = useState('');
-    const [departDate, setDepartDate] = useState('');
-    const [returnDate, setReturnDate] = useState('');
-    const [passengers, setPassengers] = useState('1 Adulto');
+    const { flightSearch, setFlightSearch } = useSearchStore();
     const [tripType, setTripType] = useState<'roundtrip' | 'oneway'>('roundtrip');
 
-    const handleSearch = () => {
-        if (!destination) return;
-        setIsSearching(true);
-        // Simular búsqueda
-        setTimeout(() => {
-            setIsSearching(false);
-            setSearchPerformed(true);
-        }, 2000);
+    // Popular destinations from origin
+    const popularDestinations = [
+        { city: 'París', code: 'CDG', price: 45, emoji: '🗼' },
+        { city: 'Londres', code: 'LHR', price: 52, emoji: '🎡' },
+        { city: 'Roma', code: 'FCO', price: 38, emoji: '🏛️' },
+        { city: 'Ámsterdam', code: 'AMS', price: 49, emoji: '🌷' },
+        { city: 'Berlín', code: 'BER', price: 41, emoji: '🏰' },
+        { city: 'Lisboa', code: 'LIS', price: 35, emoji: '🌊' },
+    ];
+
+    const handleSearch = async () => {
+        if (!flightSearch.destination) return;
+
+        const params: FlightSearchParams = {
+            origin: flightSearch.origin,
+            destination: flightSearch.destination,
+            departDate: flightSearch.departDate,
+            returnDate: tripType === 'roundtrip' ? flightSearch.returnDate : undefined,
+            passengers: flightSearch.passengers,
+            tripType
+        };
+
+        await search(params);
     };
+
+    const handleDestinationSelect = (city: string, code: string) => {
+        setFlightSearch({ destination: `${city} (${code})` });
+    };
+
+    const bestFlight = sortedResults[0];
 
     return (
         <>
+            {/* Header */}
             <div className="page-header">
                 <h1 className="page-title">Buscar Vuelos ✈️</h1>
                 <p className="page-subtitle">
@@ -48,32 +71,33 @@ export default function FlightsPage() {
             </div>
 
             {/* Search Box */}
-            <div className="card" style={{ marginBottom: '24px' }}>
+            <Card className="search-box" style={{ marginBottom: '24px' }}>
                 {/* Trip Type Toggle */}
                 <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-                    <button
-                        className={`btn ${tripType === 'roundtrip' ? 'btn-primary' : 'btn-secondary'}`}
+                    <Button
+                        variant={tripType === 'roundtrip' ? 'primary' : 'secondary'}
                         onClick={() => setTripType('roundtrip')}
-                        style={{ padding: '10px 20px' }}
                     >
                         Ida y Vuelta
-                    </button>
-                    <button
-                        className={`btn ${tripType === 'oneway' ? 'btn-primary' : 'btn-secondary'}`}
+                    </Button>
+                    <Button
+                        variant={tripType === 'oneway' ? 'primary' : 'secondary'}
                         onClick={() => setTripType('oneway')}
-                        style={{ padding: '10px 20px' }}
                     >
                         Solo Ida
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Search Form */}
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: tripType === 'roundtrip' ? '1fr 1fr 1fr 1fr auto auto' : '1fr 1fr 1fr auto auto',
+                    gridTemplateColumns: tripType === 'roundtrip'
+                        ? '1fr 1fr 1fr 1fr auto auto'
+                        : '1fr 1fr 1fr auto auto',
                     gap: '16px',
                     alignItems: 'end'
                 }}>
+                    {/* Origin */}
                     <div className="form-group">
                         <label className="form-label">Origen</label>
                         <div style={{ position: 'relative' }}>
@@ -87,14 +111,15 @@ export default function FlightsPage() {
                             <input
                                 type="text"
                                 className="form-input"
-                                value={origin}
-                                onChange={(e) => setOrigin(e.target.value)}
+                                value={flightSearch.origin}
+                                onChange={(e) => setFlightSearch({ origin: e.target.value })}
                                 placeholder="¿De dónde sales?"
                                 style={{ paddingLeft: '40px' }}
                             />
                         </div>
                     </div>
 
+                    {/* Destination */}
                     <div className="form-group">
                         <label className="form-label">Destino</label>
                         <div style={{ position: 'relative' }}>
@@ -108,14 +133,15 @@ export default function FlightsPage() {
                             <input
                                 type="text"
                                 className="form-input"
-                                value={destination}
-                                onChange={(e) => setDestination(e.target.value)}
+                                value={flightSearch.destination}
+                                onChange={(e) => setFlightSearch({ destination: e.target.value })}
                                 placeholder="¿A dónde vas?"
                                 style={{ paddingLeft: '40px', borderColor: 'var(--accent-primary)' }}
                             />
                         </div>
                     </div>
 
+                    {/* Depart Date */}
                     <div className="form-group">
                         <label className="form-label">Fecha Ida</label>
                         <div style={{ position: 'relative' }}>
@@ -129,13 +155,14 @@ export default function FlightsPage() {
                             <input
                                 type="date"
                                 className="form-input"
-                                value={departDate}
-                                onChange={(e) => setDepartDate(e.target.value)}
+                                value={flightSearch.departDate}
+                                onChange={(e) => setFlightSearch({ departDate: e.target.value })}
                                 style={{ paddingLeft: '40px' }}
                             />
                         </div>
                     </div>
 
+                    {/* Return Date */}
                     {tripType === 'roundtrip' && (
                         <div className="form-group">
                             <label className="form-label">Fecha Vuelta</label>
@@ -150,14 +177,15 @@ export default function FlightsPage() {
                                 <input
                                     type="date"
                                     className="form-input"
-                                    value={returnDate}
-                                    onChange={(e) => setReturnDate(e.target.value)}
+                                    value={flightSearch.returnDate}
+                                    onChange={(e) => setFlightSearch({ returnDate: e.target.value })}
                                     style={{ paddingLeft: '40px' }}
                                 />
                             </div>
                         </div>
                     )}
 
+                    {/* Passengers */}
                     <div className="form-group">
                         <label className="form-label">Pasajeros</label>
                         <div style={{ position: 'relative' }}>
@@ -170,37 +198,29 @@ export default function FlightsPage() {
                             }} />
                             <select
                                 className="form-input"
-                                value={passengers}
-                                onChange={(e) => setPassengers(e.target.value)}
+                                value={flightSearch.passengers}
+                                onChange={(e) => setFlightSearch({ passengers: parseInt(e.target.value) })}
                                 style={{ paddingLeft: '40px', cursor: 'pointer' }}
                             >
-                                <option>1 Adulto</option>
-                                <option>2 Adultos</option>
-                                <option>3 Adultos</option>
-                                <option>2 Adultos + 1 Niño</option>
-                                <option>2 Adultos + 2 Niños</option>
+                                <option value="1">1 Adulto</option>
+                                <option value="2">2 Adultos</option>
+                                <option value="3">3 Adultos</option>
+                                <option value="4">4 Adultos</option>
                             </select>
                         </div>
                     </div>
 
-                    <button
-                        className="btn btn-primary"
+                    {/* Search Button */}
+                    <Button
+                        variant="primary"
                         onClick={handleSearch}
-                        disabled={isSearching || !destination}
+                        disabled={isLoading || !flightSearch.destination}
+                        isLoading={isLoading}
+                        leftIcon={!isLoading && <Sparkles size={18} />}
                         style={{ height: '48px', minWidth: '160px' }}
                     >
-                        {isSearching ? (
-                            <>
-                                <div className="spinner" />
-                                Buscando...
-                            </>
-                        ) : (
-                            <>
-                                <Sparkles size={18} />
-                                Buscar con IA
-                            </>
-                        )}
-                    </button>
+                        {isLoading ? 'Buscando...' : 'Buscar con IA'}
+                    </Button>
                 </div>
 
                 {/* Options */}
@@ -212,28 +232,16 @@ export default function FlightsPage() {
                     borderTop: '1px solid var(--glass-border)',
                     flexWrap: 'wrap'
                 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer' }}>
-                        <input type="checkbox" style={{ accentColor: 'var(--accent-primary)' }} />
-                        Fechas flexibles (±3 días)
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer' }}>
-                        <input type="checkbox" style={{ accentColor: 'var(--accent-primary)' }} />
-                        Incluir aeropuertos cercanos
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer' }}>
-                        <input type="checkbox" defaultChecked style={{ accentColor: 'var(--accent-primary)' }} />
-                        Solo vuelos directos
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer' }}>
-                        <input type="checkbox" defaultChecked style={{ accentColor: 'var(--accent-primary)' }} />
-                        Monitorear precio con IA
-                    </label>
+                    <Checkbox label="Fechas flexibles (±3 días)" />
+                    <Checkbox label="Incluir aeropuertos cercanos" />
+                    <Checkbox label="Solo vuelos directos" defaultChecked />
+                    <Checkbox label="Monitorear precio con IA" defaultChecked />
                 </div>
-            </div>
+            </Card>
 
             {/* Loading State */}
-            {isSearching && (
-                <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
+            {isLoading && (
+                <Card style={{ textAlign: 'center', padding: '60px' }}>
                     <div className="ai-insight-icon" style={{ margin: '0 auto 20px', width: '64px', height: '64px' }}>
                         <Sparkles size={32} color="white" />
                     </div>
@@ -255,32 +263,95 @@ export default function FlightsPage() {
                         <span style={{ color: 'var(--accent-primary)' }}>⟳ Air Europa</span>
                         <span style={{ opacity: 0.5 }}>○ TAP</span>
                     </div>
-                </div>
+                </Card>
             )}
 
             {/* Results */}
-            {searchPerformed && !isSearching && (
-                <FlightResults origin={origin} destination={destination} />
+            {hasSearched && !isLoading && sortedResults.length > 0 && (
+                <div>
+                    {/* AI Recommendation */}
+                    {bestFlight && (
+                        <div className="ai-insight-card" style={{ marginBottom: '24px' }}>
+                            <div className="ai-insight-header">
+                                <div className="ai-insight-icon" style={{ width: '32px', height: '32px' }}>
+                                    <Sparkles size={16} color="white" />
+                                </div>
+                                <div>
+                                    <div className="ai-insight-title">Recomendación IA</div>
+                                    <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                                        {bestFlight.airline} ({bestFlight.flightNumber}) - {bestFlight.aiReason}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Sort Options */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>
+                            {sortedResults.length} vuelos encontrados
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <Button
+                                variant={sortBy === 'ai' ? 'primary' : 'secondary'}
+                                size="sm"
+                                onClick={() => setSortBy('ai')}
+                            >
+                                Score IA
+                            </Button>
+                            <Button
+                                variant={sortBy === 'price' ? 'primary' : 'secondary'}
+                                size="sm"
+                                onClick={() => setSortBy('price')}
+                            >
+                                Precio
+                            </Button>
+                            <Button
+                                variant={sortBy === 'duration' ? 'primary' : 'secondary'}
+                                size="sm"
+                                onClick={() => setSortBy('duration')}
+                            >
+                                Duración
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Flight Cards */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {sortedResults.map((flight, index) => (
+                            <FlightResultCard
+                                key={flight.id}
+                                flight={flight}
+                                isBest={index === 0 && sortBy === 'ai'}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Empty Results */}
+            {hasSearched && !isLoading && sortedResults.length === 0 && (
+                <Card>
+                    <EmptyState
+                        icon={<Plane size={48} />}
+                        title="No se encontraron vuelos"
+                        description="Intenta con otras fechas o destinos"
+                        action={<Button variant="secondary" onClick={reset}>Nueva búsqueda</Button>}
+                    />
+                </Card>
             )}
 
             {/* Initial State - Popular Destinations */}
-            {!searchPerformed && !isSearching && (
+            {!hasSearched && !isLoading && (
                 <div>
                     <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px' }}>
-                        Destinos Populares desde {origin.split(' ')[0]}
+                        Destinos Populares desde {flightSearch.origin.split(' ')[0]}
                     </h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                        {[
-                            { city: 'París', code: 'CDG', price: '€45', image: '🗼' },
-                            { city: 'Londres', code: 'LHR', price: '€52', image: '🎡' },
-                            { city: 'Roma', code: 'FCO', price: '€38', image: '🏛️' },
-                            { city: 'Ámsterdam', code: 'AMS', price: '€49', image: '🌷' },
-                            { city: 'Berlín', code: 'BER', price: '€41', image: '🏰' },
-                            { city: 'Lisboa', code: 'LIS', price: '€35', image: '🌊' },
-                        ].map((dest) => (
-                            <div
+                        {popularDestinations.map((dest) => (
+                            <Card
                                 key={dest.code}
-                                className="card"
+                                onClick={() => handleDestinationSelect(dest.city, dest.code)}
                                 style={{
                                     cursor: 'pointer',
                                     display: 'flex',
@@ -288,22 +359,19 @@ export default function FlightsPage() {
                                     gap: '16px',
                                     padding: '16px'
                                 }}
-                                onClick={() => {
-                                    setDestination(`${dest.city} (${dest.code})`);
-                                }}
                             >
-                                <div style={{ fontSize: '32px' }}>{dest.image}</div>
+                                <div style={{ fontSize: '32px' }}>{dest.emoji}</div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontWeight: '600' }}>{dest.city}</div>
                                     <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{dest.code}</div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
                                     <div style={{ color: 'var(--accent-success)', fontWeight: '700', fontSize: '18px' }}>
-                                        {dest.price}
+                                        €{dest.price}
                                     </div>
                                     <div style={{ color: 'var(--text-muted)', fontSize: '11px' }}>desde</div>
                                 </div>
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 </div>

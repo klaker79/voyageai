@@ -9,11 +9,23 @@ import {
     Moon,
     Smartphone,
     Mail,
-    ChevronRight,
-    Toggle
+    ChevronRight
 } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
-const settingsSections = [
+interface SettingItem {
+    name: string;
+    value: string;
+    icon: LucideIcon;
+    toggle?: boolean;
+}
+
+interface SettingsSection {
+    title: string;
+    items: SettingItem[];
+}
+
+const settingsSections: SettingsSection[] = [
     {
         title: 'Preferencias',
         items: [
