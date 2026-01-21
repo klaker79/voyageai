@@ -1,126 +1,174 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     MapPin,
     Clock,
     Plane,
     Hotel,
     Train,
-    Bus,
-    Coffee,
     Camera,
-    Utensils,
     QrCode,
     Navigation,
     ChevronRight,
     Calendar,
     CheckCircle,
-    AlertCircle
+    Plus,
+    Sparkles,
+    Edit2,
+    Trash2
 } from 'lucide-react';
+import { Card, Button, Badge, EmptyState } from '@/components/ui';
+import { useTripsStore } from '@/store';
+import type { Trip } from '@/types';
 
-const mockItinerary = {
-    trip: {
-        destination: 'Tokio, Japón',
-        dates: '15 Feb - 28 Feb 2026',
-        daysLeft: 25
-    },
-    days: [
-        {
-            date: '15 Feb 2026',
-            title: 'Día 1 - Llegada',
+// Extended trip type with itinerary
+interface ItineraryEvent {
+    id: string;
+    time: string;
+    endTime?: string;
+    type: 'flight' | 'hotel' | 'transport' | 'activity';
+    title: string;
+    subtitle: string;
+    status: 'confirmed' | 'pending' | 'suggestion';
+    hasTicket?: boolean;
+}
+
+interface ItineraryDay {
+    date: string;
+    title: string;
+    events: ItineraryEvent[];
+}
+
+// Generate sample itinerary based on trip
+function generateItinerary(trip: Trip): ItineraryDay[] {
+    const startDate = new Date(trip.startDate);
+    const endDate = new Date(trip.endDate);
+    const days: ItineraryDay[] = [];
+
+    const destination = trip.destination.split(',')[0];
+
+    // Day 1 - Arrival
+    days.push({
+        date: startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+        title: 'Día 1 - Llegada',
+        events: [
+            {
+                id: 'e1',
+                time: '08:30',
+                endTime: '14:45',
+                type: 'flight',
+                title: `Vuelo a ${destination}`,
+                subtitle: 'Terminal 4 · Clase Economy',
+                status: 'confirmed',
+                hasTicket: true
+            },
+            {
+                id: 'e2',
+                time: '15:30',
+                type: 'transport',
+                title: 'Transfer al hotel',
+                subtitle: 'Taxi/Uber disponible',
+                status: 'pending'
+            },
+            {
+                id: 'e3',
+                time: '17:00',
+                type: 'hotel',
+                title: `Check-in Hotel en ${destination}`,
+                subtitle: 'Habitación reservada',
+                status: 'confirmed'
+            }
+        ]
+    });
+
+    // Middle days - Activities
+    let dayNum = 2;
+    const current = new Date(startDate);
+    current.setDate(current.getDate() + 1);
+
+    while (current < endDate) {
+        days.push({
+            date: current.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+            title: `Día ${dayNum} - Exploración`,
             events: [
                 {
-                    time: '08:30',
-                    endTime: '20:45',
-                    type: 'flight',
-                    title: 'Vuelo Madrid → Tokio',
-                    subtitle: 'Iberia IB7945 · Terminal 4',
-                    status: 'confirmed',
-                    hasTicket: true
-                },
-                {
-                    time: '21:30',
-                    type: 'transport',
-                    title: 'Narita Express al centro',
-                    subtitle: 'Andén 1 → Shinjuku Station',
-                    status: 'confirmed',
-                    hasTicket: true
-                },
-                {
-                    time: '23:00',
-                    type: 'hotel',
-                    title: 'Check-in Park Hyatt Tokyo',
-                    subtitle: 'Habitación 4521 · Vista a la ciudad',
-                    status: 'confirmed'
-                }
-            ]
-        },
-        {
-            date: '16 Feb 2026',
-            title: 'Día 2 - Exploración',
-            events: [
-                {
+                    id: `day${dayNum}-1`,
                     time: '09:00',
                     type: 'activity',
-                    title: 'Desayuno en Tsukiji Market',
-                    subtitle: 'Reserva para 2 personas',
-                    status: 'confirmed'
-                },
-                {
-                    time: '11:00',
-                    type: 'activity',
-                    title: 'Templo Senso-ji',
-                    subtitle: 'Asakusa · Entrada gratuita',
-                    status: 'pending'
-                },
-                {
-                    time: '14:00',
-                    type: 'activity',
-                    title: 'Almuerzo en Ramen Street',
-                    subtitle: 'Tokyo Station',
+                    title: 'Desayuno',
+                    subtitle: 'En el hotel o explorar zona local',
                     status: 'suggestion'
                 },
                 {
-                    time: '16:00',
+                    id: `day${dayNum}-2`,
+                    time: '10:30',
                     type: 'activity',
-                    title: 'Shibuya Crossing & Harajuku',
-                    subtitle: 'Compras y cultura',
+                    title: `Visita turística ${destination}`,
+                    subtitle: 'Lugares imprescindibles',
                     status: 'pending'
                 },
                 {
-                    time: '20:00',
+                    id: `day${dayNum}-3`,
+                    time: '14:00',
                     type: 'activity',
-                    title: 'Cena Kaiseki',
-                    subtitle: 'Restaurante Narisawa · 2 Estrellas Michelin',
-                    status: 'confirmed',
-                    hasTicket: true
-                }
-            ]
-        },
-        {
-            date: '17 Feb 2026',
-            title: 'Día 3 - Monte Fuji',
-            events: [
-                {
-                    time: '07:00',
-                    type: 'transport',
-                    title: 'Shinkansen a Hakone',
-                    subtitle: 'Tren bala · 1h 30min',
-                    status: 'confirmed',
-                    hasTicket: true
+                    title: 'Almuerzo local',
+                    subtitle: 'Gastronomía típica',
+                    status: 'suggestion'
                 },
                 {
-                    time: '09:00',
+                    id: `day${dayNum}-4`,
+                    time: '20:00',
                     type: 'activity',
-                    title: 'Excursión Monte Fuji',
-                    subtitle: 'Tour guiado en español',
-                    status: 'confirmed'
+                    title: 'Cena',
+                    subtitle: 'Restaurante recomendado por IA',
+                    status: 'suggestion'
                 }
             ]
-        }
-    ]
-};
+        });
+
+        current.setDate(current.getDate() + 1);
+        dayNum++;
+
+        // Limit to 5 days sample
+        if (dayNum > 5) break;
+    }
+
+    // Last day - Departure
+    days.push({
+        date: endDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+        title: `Día ${dayNum} - Regreso`,
+        events: [
+            {
+                id: 'last1',
+                time: '10:00',
+                type: 'hotel',
+                title: 'Check-out',
+                subtitle: 'Dejar habitación',
+                status: 'pending'
+            },
+            {
+                id: 'last2',
+                time: '12:00',
+                type: 'transport',
+                title: 'Transfer al aeropuerto',
+                subtitle: 'Llegar 3h antes del vuelo',
+                status: 'pending'
+            },
+            {
+                id: 'last3',
+                time: '16:00',
+                type: 'flight',
+                title: 'Vuelo de regreso',
+                subtitle: 'Llegada estimada por la noche',
+                status: 'confirmed',
+                hasTicket: true
+            }
+        ]
+    });
+
+    return days;
+}
 
 const typeIcons: Record<string, typeof Plane> = {
     flight: Plane,
@@ -136,8 +184,57 @@ const typeColors: Record<string, string> = {
     activity: 'var(--accent-success)'
 };
 
+// Default demo trip
+const demoTrip: Trip = {
+    id: 'demo-trip',
+    name: 'Viaje a Tokio',
+    destination: 'Tokio, Japón',
+    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800',
+    startDate: '2026-02-15',
+    endDate: '2026-02-28',
+    status: 'planning',
+    progress: 75,
+    bookings: [],
+    totalCost: 1850,
+    savings: 320
+};
+
 export default function ItineraryPage() {
+    const { activeTrip, trips } = useTripsStore();
     const [selectedDay, setSelectedDay] = useState(0);
+    const [itinerary, setItinerary] = useState<ItineraryDay[]>([]);
+
+    // Use active trip, first trip, or demo
+    const currentTrip = activeTrip || trips[0] || demoTrip;
+
+    useEffect(() => {
+        if (currentTrip) {
+            setItinerary(generateItinerary(currentTrip));
+            setSelectedDay(0);
+        }
+    }, [currentTrip]);
+
+    // Calculate days left
+    const daysLeft = Math.max(0, Math.ceil(
+        (new Date(currentTrip.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    ));
+
+    const formatDates = (start: string, end: string) => {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        return `${startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    };
+
+    if (!itinerary.length) {
+        return (
+            <EmptyState
+                icon={<MapPin size={48} />}
+                title="Sin itinerario"
+                description="Crea un viaje para generar tu itinerario"
+                action={<Button variant="primary">Nuevo Viaje</Button>}
+            />
+        );
+    }
 
     return (
         <>
@@ -149,49 +246,84 @@ export default function ItineraryPage() {
             </div>
 
             {/* Trip Overview */}
-            <div className="card" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Próximo Viaje</div>
-                    <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '4px' }}>
-                        {mockItinerary.trip.destination}
-                    </h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
-                        <Calendar size={16} />
-                        {mockItinerary.trip.dates}
+            <Card style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                            {daysLeft > 0 ? 'Próximo Viaje' : 'Viaje Activo'}
+                        </div>
+                        <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '4px' }}>
+                            {currentTrip.destination}
+                        </h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                            <Calendar size={16} />
+                            {formatDates(currentTrip.startDate, currentTrip.endDate)}
+                        </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '48px', fontWeight: '700', color: 'var(--accent-primary)' }}>
+                            {daysLeft}
+                        </div>
+                        <div style={{ color: 'var(--text-muted)' }}>días restantes</div>
                     </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '48px', fontWeight: '700', color: 'var(--accent-primary)' }}>
-                        {mockItinerary.trip.daysLeft}
+
+                {/* Progress bar */}
+                <div style={{ marginTop: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Planificación</span>
+                        <span style={{ color: 'var(--accent-primary)', fontWeight: '600' }}>{currentTrip.progress}%</span>
                     </div>
-                    <div style={{ color: 'var(--text-muted)' }}>días restantes</div>
+                    <div style={{ height: '6px', background: 'var(--glass-border)', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{
+                            width: `${currentTrip.progress}%`,
+                            height: '100%',
+                            background: 'var(--gradient-primary)',
+                            borderRadius: '3px'
+                        }} />
+                    </div>
                 </div>
-            </div>
+            </Card>
 
             {/* Day Selector */}
             <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
-                {mockItinerary.days.map((day, index) => (
-                    <button
+                {itinerary.map((day, index) => (
+                    <Button
                         key={index}
+                        variant={selectedDay === index ? 'primary' : 'secondary'}
                         onClick={() => setSelectedDay(index)}
-                        className={`btn ${selectedDay === index ? 'btn-primary' : 'btn-secondary'}`}
                         style={{
                             padding: '12px 20px',
                             whiteSpace: 'nowrap',
-                            flexShrink: 0
+                            flexShrink: 0,
+                            flexDirection: 'column',
+                            alignItems: 'flex-start'
                         }}
                     >
-                        <div style={{ fontSize: '12px', opacity: 0.8 }}>{day.date.split(' ')[0]} {day.date.split(' ')[1]}</div>
-                        <div style={{ fontWeight: '600' }}>{day.title}</div>
-                    </button>
+                        <div style={{ fontSize: '11px', opacity: 0.8 }}>{day.date}</div>
+                        <div style={{ fontWeight: '600', fontSize: '13px' }}>{day.title}</div>
+                    </Button>
                 ))}
             </div>
 
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                <Button variant="secondary" size="sm" leftIcon={<Plus size={14} />}>
+                    Añadir evento
+                </Button>
+                <Button variant="secondary" size="sm" leftIcon={<Sparkles size={14} />}>
+                    Sugerencias IA
+                </Button>
+            </div>
+
             {/* Timeline */}
-            <div className="card">
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '24px' }}>
-                    {mockItinerary.days[selectedDay].title}
-                </h3>
+            <Card>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>
+                        {itinerary[selectedDay]?.title}
+                    </h3>
+                    <Badge variant="muted">{itinerary[selectedDay]?.events.length} eventos</Badge>
+                </div>
 
                 <div style={{ position: 'relative', paddingLeft: '40px' }}>
                     {/* Timeline Line */}
@@ -204,16 +336,16 @@ export default function ItineraryPage() {
                         background: 'var(--glass-border)'
                     }} />
 
-                    {mockItinerary.days[selectedDay].events.map((event, index) => {
+                    {itinerary[selectedDay]?.events.map((event, index) => {
                         const Icon = typeIcons[event.type] || Camera;
                         const color = typeColors[event.type] || 'var(--accent-primary)';
 
                         return (
                             <div
-                                key={index}
+                                key={event.id}
                                 style={{
                                     position: 'relative',
-                                    marginBottom: index < mockItinerary.days[selectedDay].events.length - 1 ? '24px' : 0
+                                    marginBottom: index < (itinerary[selectedDay]?.events.length ?? 0) - 1 ? '20px' : 0
                                 }}
                             >
                                 {/* Timeline Dot */}
@@ -240,10 +372,11 @@ export default function ItineraryPage() {
                                     padding: '16px',
                                     display: 'flex',
                                     justifyContent: 'space-between',
-                                    alignItems: 'center'
+                                    alignItems: 'center',
+                                    transition: 'all 0.2s ease'
                                 }}>
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px', flexWrap: 'wrap' }}>
                                             <span style={{
                                                 fontSize: '14px',
                                                 fontWeight: '600',
@@ -253,45 +386,22 @@ export default function ItineraryPage() {
                                                 {event.endTime && ` → ${event.endTime}`}
                                             </span>
                                             {event.status === 'confirmed' && (
-                                                <span style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px',
-                                                    fontSize: '11px',
-                                                    color: 'var(--accent-success)',
-                                                    background: 'rgba(16, 185, 129, 0.15)',
-                                                    padding: '2px 8px',
-                                                    borderRadius: '4px'
-                                                }}>
-                                                    <CheckCircle size={10} />
+                                                <Badge variant="success">
+                                                    <CheckCircle size={10} style={{ marginRight: '4px' }} />
                                                     Confirmado
-                                                </span>
+                                                </Badge>
                                             )}
                                             {event.status === 'pending' && (
-                                                <span style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px',
-                                                    fontSize: '11px',
-                                                    color: 'var(--accent-warning)',
-                                                    background: 'rgba(245, 158, 11, 0.15)',
-                                                    padding: '2px 8px',
-                                                    borderRadius: '4px'
-                                                }}>
-                                                    <Clock size={10} />
+                                                <Badge variant="warning">
+                                                    <Clock size={10} style={{ marginRight: '4px' }} />
                                                     Pendiente
-                                                </span>
+                                                </Badge>
                                             )}
                                             {event.status === 'suggestion' && (
-                                                <span style={{
-                                                    fontSize: '11px',
-                                                    color: 'var(--text-muted)',
-                                                    background: 'var(--glass-bg)',
-                                                    padding: '2px 8px',
-                                                    borderRadius: '4px'
-                                                }}>
-                                                    ✨ Sugerencia IA
-                                                </span>
+                                                <Badge variant="ai">
+                                                    <Sparkles size={10} style={{ marginRight: '4px' }} />
+                                                    Sugerencia IA
+                                                </Badge>
                                             )}
                                         </div>
                                         <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '2px' }}>
@@ -302,29 +412,27 @@ export default function ItineraryPage() {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div style={{ display: 'flex', gap: '8px', marginLeft: '16px' }}>
                                         {event.hasTicket && (
-                                            <button className="btn btn-secondary" style={{ padding: '8px 12px' }}>
-                                                <QrCode size={16} />
-                                                Ticket
-                                            </button>
+                                            <Button variant="secondary" size="sm">
+                                                <QrCode size={14} />
+                                            </Button>
                                         )}
                                         {(event.type === 'flight' || event.type === 'transport' || event.type === 'hotel') && (
-                                            <button className="btn btn-secondary" style={{ padding: '8px 12px' }}>
-                                                <Navigation size={16} />
-                                                Navegar
-                                            </button>
+                                            <Button variant="secondary" size="sm">
+                                                <Navigation size={14} />
+                                            </Button>
                                         )}
-                                        <button className="btn btn-ghost" style={{ padding: '8px' }}>
-                                            <ChevronRight size={20} />
-                                        </button>
+                                        <Button variant="ghost" size="sm">
+                                            <ChevronRight size={18} />
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
-            </div>
+            </Card>
         </>
     );
 }
