@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
     FileText,
     Shield,
-    Passport,
+    BookOpen,
     CheckCircle,
     Clock,
     AlertTriangle,
@@ -169,7 +169,7 @@ export default function DocumentsPage() {
                     className={`btn ${activeTab === 'passport' ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={() => setActiveTab('passport')}
                 >
-                    <Passport size={16} />
+                    <BookOpen size={16} />
                     Pasaportes
                 </button>
             </div>
@@ -381,7 +381,7 @@ export default function DocumentsPage() {
                                 alignItems: 'center',
                                 justifyContent: 'center'
                             }}>
-                                <Passport size={32} color="white" />
+                                <BookOpen size={32} color="white" />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: '600', fontSize: '18px', marginBottom: '4px' }}>
