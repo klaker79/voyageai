@@ -9,8 +9,8 @@ import type { FlightSearchParams, FlightWithScore } from '@/types';
 const APIFY_API_URL = 'https://api.apify.com/v2';
 const API_TOKEN = process.env.NEXT_PUBLIC_APIFY_TOKEN;
 
-// Actor ID for Google Flights scraper
-const GOOGLE_FLIGHTS_ACTOR = 'voyager/google-flights-scraper';
+// Actor ID for Google Flights scraper (johnvc/Google-Flights-Data-Scraper)
+const GOOGLE_FLIGHTS_ACTOR = 'johnvc~Google-Flights-Data-Scraper-Flight-and-Price-Search';
 
 // Airline logos mapping
 const airlineLogos: Record<string, string> = {
